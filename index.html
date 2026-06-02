@@ -6,13 +6,28 @@
 <title>Samihs daily task tracker</title>
 
 <style>
+:root {
+    --bg: #0f0f0f;
+    --card: #1c1c1c;
+    --task: #2a2a2a;
+    --text: white;
+}
+
+.light {
+    --bg: #f2f2f2;
+    --card: white;
+    --task: #e6e6e6;
+    --text: black;
+}
+
 body {
     font-family: Arial, sans-serif;
-    background: #0f0f0f;
-    color: white;
+    background: var(--bg);
+    color: var(--text);
     text-align: center;
     margin: 0;
     padding: 20px;
+    transition: 0.3s;
 }
 
 h1 {
@@ -22,7 +37,7 @@ h1 {
 .container {
     max-width: 420px;
     margin: auto;
-    background: #1c1c1c;
+    background: var(--card);
     padding: 20px;
     border-radius: 12px;
 }
@@ -31,7 +46,7 @@ h1 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #2a2a2a;
+    background: var(--task);
     padding: 10px;
     border-radius: 8px;
     margin: 10px 0;
@@ -49,12 +64,6 @@ button {
     color: white;
 }
 
-.deleteBtn {
-    background: #ff4444;
-    color: white;
-    margin-left: 5px;
-}
-
 #settingsBtn {
     position: fixed;
     top: 10px;
@@ -68,17 +77,17 @@ button {
     position: fixed;
     top: 50px;
     right: 10px;
-    background: #222;
+    background: var(--card);
     padding: 15px;
     border-radius: 10px;
-    width: 240px;
+    width: 250px;
     text-align: left;
 }
 
 input, select {
     width: 100%;
     padding: 8px;
-    margin-top: 10px;
+    margin-top: 8px;
     border-radius: 6px;
     border: none;
 }
@@ -92,6 +101,13 @@ input, select {
 
 .removeBtn {
     background: #ff4444;
+    color: white;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.toggleBtn {
+    background: #444;
     color: white;
     width: 100%;
     margin-top: 10px;
@@ -115,7 +131,7 @@ input, select {
 
 <body>
 
-<h1>🔥 Samihs daily task tracker</h1>
+<h1 id="title">🔥 Samihs daily task tracker</h1>
 
 <div class="container">
 
@@ -130,54 +146,76 @@ input, select {
 <button id="settingsBtn" onclick="togglePanel()">⚙️</button>
 
 <div class="panel" id="panel">
+
     <h3>Settings</h3>
 
+    <!-- Change Title -->
+    <h4>Change Title</h4>
+    <input id="titleInput" placeholder="New title...">
+    <button class="addBtn" onclick="changeTitle()">Update Title</button>
+
+    <!-- Theme -->
+    <h4>Theme</h4>
+    <button class="toggleBtn" onclick="toggleTheme()">Toggle Light/Dark</button>
+
+    <!-- Add Task -->
     <h4>Add Task</h4>
     <input id="newTask" placeholder="New task...">
     <button class="addBtn" onclick="addTask()">Add</button>
 
-    <h4 style="margin-top:15px;">Remove Task</h4>
+    <!-- Remove Task -->
+    <h4>Remove Task</h4>
     <select id="removeSelect"></select>
     <button class="removeBtn" onclick="removeTask()">Remove</button>
+
 </div>
 
 <script>
-let defaultTasks = [
-    "Go to school",
-    "Workout or move",
-    "Do homework / learn",
-    "Eat decent meals",
-    "No bad habits"
-];
 
-let tasks = JSON.parse(localStorage.getItem("tasks")) ||
-defaultTasks.map(t => ({ name: t, done: false }));
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [
+    { name: "Go to school", done: false },
+    { name: "Workout or move", done: false },
+    { name: "Do homework / learn", done: false },
+    { name: "Eat decent meals", done: false },
+    { name: "No bad habits", done: false }
+];
 
 let streak = parseInt(localStorage.getItem("streak")) || 0;
 let lastDate = localStorage.getItem("lastDate");
 
 let today = new Date().toDateString();
 
-// streak logic
+// streak system
 if (lastDate !== today) {
     let yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
 
     if (lastDate === yesterday.toDateString()) {
-        streak += 1;
+        streak++;
     } else {
         streak = 1;
     }
 
-    localStorage.setItem("lastDate", today);
     localStorage.setItem("streak", streak);
+    localStorage.setItem("lastDate", today);
+}
+
+// load saved title
+let savedTitle = localStorage.getItem("title");
+if (savedTitle) {
+    document.getElementById("title").innerText = savedTitle;
+}
+
+// load theme
+if (localStorage.getItem("theme") === "light") {
+    document.body.classList.add("light");
 }
 
 function render() {
-    const container = document.getElementById("tasks");
+    let container = document.getElementById("tasks");
     container.innerHTML = "";
 
-    tasks.forEach((task, index) => {
+    tasks.forEach((task, i) => {
         let div = document.createElement("div");
         div.className = "task";
 
@@ -185,29 +223,27 @@ function render() {
         label.innerText = task.name;
         if (task.done) label.classList.add("done");
 
-        let doneBtn = document.createElement("button");
-        doneBtn.innerText = task.done ? "Undo" : "Done";
-        doneBtn.className = "doneBtn";
-        doneBtn.onclick = () => {
-            tasks[index].done = !tasks[index].done;
+        let btn = document.createElement("button");
+        btn.innerText = task.done ? "Undo" : "Done";
+        btn.className = "doneBtn";
+        btn.onclick = () => {
+            tasks[i].done = !tasks[i].done;
             save();
             render();
         };
 
         div.appendChild(label);
-        div.appendChild(doneBtn);
-
+        div.appendChild(btn);
         container.appendChild(div);
     });
 
-    let doneCount = tasks.filter(t => t.done).length;
     document.getElementById("progress").innerText =
-        `Progress: ${doneCount} / ${tasks.length}`;
+        `Progress: ${tasks.filter(t => t.done).length} / ${tasks.length}`;
 
     document.getElementById("streak").innerText =
         `Streak: ${streak} 🔥`;
 
-    updateRemoveDropdown();
+    updateDropdown();
 }
 
 function save() {
@@ -216,7 +252,7 @@ function save() {
 
 function addTask() {
     let input = document.getElementById("newTask");
-    if (input.value.trim() === "") return;
+    if (!input.value.trim()) return;
 
     tasks.push({ name: input.value, done: false });
     input.value = "";
@@ -225,25 +261,21 @@ function addTask() {
 }
 
 function removeTask() {
-    let select = document.getElementById("removeSelect");
-    let index = select.value;
-
-    if (index === "") return;
-
+    let index = document.getElementById("removeSelect").value;
     tasks.splice(index, 1);
     save();
     render();
 }
 
-function updateRemoveDropdown() {
+function updateDropdown() {
     let select = document.getElementById("removeSelect");
     select.innerHTML = "";
 
-    tasks.forEach((task, index) => {
-        let option = document.createElement("option");
-        option.value = index;
-        option.text = task.name;
-        select.appendChild(option);
+    tasks.forEach((t, i) => {
+        let opt = document.createElement("option");
+        opt.value = i;
+        opt.innerText = t.name;
+        select.appendChild(opt);
     });
 }
 
@@ -252,7 +284,26 @@ function togglePanel() {
     panel.style.display = panel.style.display === "block" ? "none" : "block";
 }
 
+function changeTitle() {
+    let newTitle = document.getElementById("titleInput").value;
+    if (!newTitle.trim()) return;
+
+    document.getElementById("title").innerText = newTitle;
+    localStorage.setItem("title", newTitle);
+}
+
+function toggleTheme() {
+    document.body.classList.toggle("light");
+
+    if (document.body.classList.contains("light")) {
+        localStorage.setItem("theme", "light");
+    } else {
+        localStorage.setItem("theme", "dark");
+    }
+}
+
 render();
+
 </script>
 
 </body>

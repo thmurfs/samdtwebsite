@@ -11,6 +11,8 @@
     --card:#1c1c1c;
     --task:#2a2a2a;
     --text:white;
+    --barbg:#333;
+    --barfill:#4caf50;
 }
 
 .light {
@@ -18,6 +20,8 @@
     --card:white;
     --task:#e6e6e6;
     --text:black;
+    --barbg:#ddd;
+    --barfill:#2ecc71;
 }
 
 body {
@@ -55,17 +59,24 @@ button {
     cursor:pointer;
 }
 
-.doneBtn { background:#4caf50; color:white; }
+.doneBtn { background:#4caf50;color:white; }
 
-#settingsBtn {
+.iconBar {
     position:fixed;
     top:10px;
     right:10px;
-    background:#333;
-    color:white;
+    display:flex;
+    gap:10px;
 }
 
-.panel {
+.iconBtn {
+    background:#333;
+    color:white;
+    padding:10px;
+    border-radius:8px;
+}
+
+.panel, .calendarPanel {
     display:none;
     position:fixed;
     top:50px;
@@ -74,7 +85,6 @@ button {
     padding:15px;
     border-radius:10px;
     width:260px;
-    text-align:left;
 }
 
 input, select {
@@ -89,9 +99,31 @@ input, select {
 .removeBtn{background:#ff4444;color:white;width:100%;margin-top:10px;}
 .toggleBtn{background:#444;color:white;width:100%;margin-top:10px;}
 
-.stats {
+.stats { margin-top:10px; }
+
+/* XP BAR */
+.xpWrap {
     margin-top:10px;
-    font-size:16px;
+}
+
+.xpBar {
+    width:100%;
+    height:14px;
+    background:var(--barbg);
+    border-radius:10px;
+    overflow:hidden;
+}
+
+.xpFill {
+    height:100%;
+    width:0%;
+    background:var(--barfill);
+    transition:0.3s;
+}
+
+.levelText {
+    margin-top:6px;
+    font-size:14px;
 }
 
 .done { text-decoration:line-through; opacity:0.6; }
@@ -101,7 +133,7 @@ input, select {
     display:grid;
     grid-template-columns:repeat(7,1fr);
     gap:4px;
-    margin-top:15px;
+    margin-top:10px;
 }
 
 .cell {
@@ -114,11 +146,6 @@ input, select {
 .cell.low { background:#1f3b1f; }
 .cell.mid { background:#2ecc71; }
 .cell.high { background:#00ff88; }
-
-.small {
-    font-size:12px;
-    opacity:0.7;
-}
 </style>
 </head>
 
@@ -129,21 +156,26 @@ input, select {
 <div class="container">
 
 <div class="stats" id="streak">Streak: 0 🔥</div>
-<div class="stats" id="level">Level: 0</div>
-<div class="stats" id="xp">XP: 0</div>
-<div class="stats" id="prestige">Prestige: 0</div>
 
-<h3 class="small">📅 Activity Heatmap (last 28 days)</h3>
-<div class="heatmap" id="heatmap"></div>
+<div class="xpWrap">
+    <div class="xpBar">
+        <div class="xpFill" id="xpFill"></div>
+    </div>
+    <div class="levelText" id="levelText">Level 0</div>
+</div>
 
 <div id="tasks"></div>
 
 </div>
 
-<button id="settingsBtn" onclick="togglePanel()">⚙️</button>
+<!-- ICONS -->
+<div class="iconBar">
+    <button class="iconBtn" onclick="toggleCalendar()">📅</button>
+    <button class="iconBtn" onclick="togglePanel()">⚙️</button>
+</div>
 
+<!-- SETTINGS -->
 <div class="panel" id="panel">
-
 <h3>Settings</h3>
 
 <h4>Change Title</h4>
@@ -160,7 +192,13 @@ input, select {
 <h4>Remove Task</h4>
 <select id="removeSelect"></select>
 <button class="removeBtn" onclick="removeTask()">Remove</button>
+</div>
 
+<!-- CALENDAR -->
+<div class="calendarPanel" id="calendar">
+<h3>📅 Activity Heatmap</h3>
+<div class="heatmap" id="heatmap"></div>
+<p style="font-size:12px;opacity:0.7;">Last 28 days</p>
 </div>
 
 <script>
@@ -172,75 +210,55 @@ let tasks = JSON.parse(localStorage.getItem("tasks")) || [
  {name:"Eat well",done:false}
 ];
 
-let streak = +localStorage.getItem("streak") || 0;
 let xp = +localStorage.getItem("xp") || 0;
-let level = +localStorage.getItem("level") || 0;
-let prestige = +localStorage.getItem("prestige") || 0;
-
+let streak = +localStorage.getItem("streak") || 0;
+let history = JSON.parse(localStorage.getItem("history")) || {};
 let lastDate = localStorage.getItem("lastDate");
+
 let today = new Date().toDateString();
 
-let history = JSON.parse(localStorage.getItem("history")) || {};
-
-// daily reset + XP logic
-if (lastDate !== today) {
+// DAILY RESET
+if(lastDate !== today){
 
     let yesterday = new Date();
     yesterday.setDate(yesterday.getDate()-1);
 
-    let allDone = JSON.parse(localStorage.getItem("allDone")) || false;
+    let allDone = tasks.every(t=>t.done);
 
-    if (lastDate === yesterday.toDateString() && allDone) {
+    if(lastDate === yesterday.toDateString() && allDone){
         streak++;
     } else {
         streak = 1;
     }
 
-    // save yesterday XP to heatmap
-    let yesterdayKey = yesterday.toDateString();
-    history[yesterdayKey] = calculateDailyXP();
-
-    // level system
-    level = Math.floor(xp / 100);
-
-    if (level >= 100) {
-        prestige++;
-        level = 0;
-        xp = 0;
-    }
-
-    localStorage.setItem("history", JSON.stringify(history));
-    localStorage.setItem("lastDate", today);
-    localStorage.setItem("streak", streak);
-    localStorage.setItem("level", level);
-    localStorage.setItem("prestige", prestige);
+    history[yesterday.toDateString()] = xp;
 
     tasks.forEach(t=>t.done=false);
-    localStorage.setItem("tasks", JSON.stringify(tasks));
+
+    localStorage.setItem("history",JSON.stringify(history));
+    localStorage.setItem("streak",streak);
+    localStorage.setItem("lastDate",today);
+    localStorage.setItem("tasks",JSON.stringify(tasks));
 }
 
-function calculateDailyXP() {
-    return tasks.filter(t=>t.done).length * 10;
-}
+function render(){
 
-function render() {
-
-    let container = document.getElementById("tasks");
-    container.innerHTML="";
+    let c=document.getElementById("tasks");
+    c.innerHTML="";
 
     tasks.forEach((t,i)=>{
-        let div=document.createElement("div");
-        div.className="task";
+        let d=document.createElement("div");
+        d.className="task";
 
-        let label=document.createElement("span");
-        label.innerText=t.name;
-        if(t.done) label.classList.add("done");
+        let s=document.createElement("span");
+        s.innerText=t.name;
+        if(t.done)s.classList.add("done");
 
-        let btn=document.createElement("button");
-        btn.innerText=t.done?"Undo":"Done";
-        btn.className="doneBtn";
+        let b=document.createElement("button");
+        b.className="doneBtn";
+        b.innerText=t.done?"Undo":"Done";
 
-        btn.onclick=()=>{
+        b.onclick=()=>{
             tasks[i].done=!t.done;
 
             if(tasks[i].done) xp+=10;
@@ -250,27 +268,27 @@ function render() {
             render();
         };
 
-        div.appendChild(label);
-        div.appendChild(btn);
-        container.appendChild(div);
+        d.appendChild(s);
+        d.appendChild(b);
+        c.appendChild(d);
     });
 
-    localStorage.setItem("xp",xp);
-    level=Math.floor(xp/100);
-
+    updateXPBar();
     document.getElementById("streak").innerText=`Streak: ${streak} 🔥`;
-    document.getElementById("level").innerText=`Level: ${level}`;
-    document.getElementById("xp").innerText=`XP: ${xp}`;
-    document.getElementById("prestige").innerText=`Prestige: ${prestige}`;
 
     updateDropdown();
-    checkAllDone();
     renderHeatmap();
 }
 
-function checkAllDone(){
-    let allDone = tasks.every(t=>t.done);
-    localStorage.setItem("allDone",allDone);
+function updateXPBar(){
+    let level = Math.floor(xp/100);
+    let progress = xp % 100;
+
+    document.getElementById("levelText").innerText =
+        `Level ${level}`;
+
+    document.getElementById("xpFill").style.width =
+        `${progress}%`;
 }
 
 function renderHeatmap(){
@@ -278,29 +296,28 @@ function renderHeatmap(){
     let map=document.getElementById("heatmap");
     map.innerHTML="";
 
-    let days=[];
     for(let i=27;i>=0;i--){
+
         let d=new Date();
         d.setDate(d.getDate()-i);
-        days.push(d.toDateString());
+
+        let key=d.toDateString();
+        let val=history[key]||0;
+
+        let cell=document.createElement("div");
+        cell.className="cell";
+
+        if(val>=40)cell.classList.add("high");
+        else if(val>=20)cell.classList.add("mid");
+        else if(val>0)cell.classList.add("low");
+
+        map.appendChild(cell);
     }
-
-    days.forEach(day=>{
-        let div=document.createElement("div");
-        div.className="cell";
-
-        let val = history[day] || 0;
-
-        if(val>=40) div.classList.add("high");
-        else if(val>=20) div.classList.add("mid");
-        else if(val>0) div.classList.add("low");
-
-        map.appendChild(div);
-    });
 }
 
 function save(){
     localStorage.setItem("tasks",JSON.stringify(tasks));
+    localStorage.setItem("xp",xp);
 }
 
 function addTask(){
@@ -330,6 +347,11 @@ function updateDropdown(){
 function togglePanel(){
     let p=document.getElementById("panel");
     p.style.display=p.style.display==="block"?"none":"block";
+}
+
+function toggleCalendar(){
+    let c=document.getElementById("calendar");
+    c.style.display=c.style.display==="block"?"none":"block";
 }
 
 function changeTitle(){

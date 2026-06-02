@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Tracker</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #0f0f0f;
+        color: white;
+        text-align: center;
+        margin: 0;
+        padding: 20px;
+    }
+
+    h1 {
+        margin-top: 20px;
+    }
+
+    .container {
+        max-width: 400px;
+        margin: auto;
+        background: #1c1c1c;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 0 10px rgba(255,255,255,0.1);
+    }
+
+    .task {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 15px 0;
+        background: #2a2a2a;
+        padding: 10px;
+        border-radius: 8px;
+    }
+
+    button {
+        background: #4caf50;
+        border: none;
+        padding: 10px;
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    button.reset {
+        background: #ff4444;
+        margin-top: 20px;
+        width: 100%;
+    }
+
+    .done {
+        text-decoration: line-through;
+        opacity: 0.6;
+    }
+
+    .progress {
+        margin-top: 15px;
+    }
+</style>
+</head>
+
+<body>
+
+<h1>🔥 Daily Growth Tracker</h1>
+
+<div class="container">
+
+    <div id="tasks"></div>
+
+    <div class="progress" id="progress"></div>
+
+    <button class="reset" onclick="resetDay()">Reset Day</button>
+
+</div>
+
+<script>
+const defaultTasks = [
+    "Go to school / show up",
+    "Workout or move body",
+    "Do homework or study 30 min",
+    "Eat decent meals",
+    "No bad habits today"
+];
+
+let tasks = JSON.parse(localStorage.getItem("tasks")) || defaultTasks.map(t => ({ name: t, done: false }));
+
+function render() {
+    const container = document.getElementById("tasks");
+    container.innerHTML = "";
+
+    tasks.forEach((task, index) => {
+        const div = document.createElement("div");
+        div.className = "task";
+
+        const label = document.createElement("span");
+        label.innerText = task.name;
+        if (task.done) label.classList.add("done");
+
+        const btn = document.createElement("button");
+        btn.innerText = task.done ? "Undo" : "Done";
+        btn.onclick = () => {
+            tasks[index].done = !tasks[index].done;
+            save();
+            render();
+        };
+
+        div.appendChild(label);
+        div.appendChild(btn);
+        container.appendChild(div);
+    });
+
+    const doneCount = tasks.filter(t => t.done).length;
+    document.getElementById("progress").innerText =
+        `Progress: ${doneCount} / ${tasks.length}`;
+}
+
+function save() {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
+function resetDay() {
+    tasks = defaultTasks.map(t => ({ name: t, done: false }));
+    save();
+    render();
+}
+
+// Auto-reset each day
+let lastDate = localStorage.getItem("lastDate");
+let today = new Date().toDateString();
+
+if (lastDate !== today) {
+    resetDay();
+    localStorage.setItem("lastDate", today);
+}
+
+render();
+</script>
+
+</body>
+</html>

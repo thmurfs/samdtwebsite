@@ -7,124 +7,117 @@
 
 <style>
 :root {
-    --bg: #0f0f0f;
-    --card: #1c1c1c;
-    --task: #2a2a2a;
-    --text: white;
+    --bg:#0f0f0f;
+    --card:#1c1c1c;
+    --task:#2a2a2a;
+    --text:white;
 }
 
 .light {
-    --bg: #f2f2f2;
-    --card: white;
-    --task: #e6e6e6;
-    --text: black;
+    --bg:#f2f2f2;
+    --card:white;
+    --task:#e6e6e6;
+    --text:black;
 }
 
 body {
-    font-family: Arial, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    text-align: center;
-    margin: 0;
-    padding: 20px;
-    transition: 0.3s;
-}
-
-h1 {
-    margin-top: 20px;
+    font-family: Arial;
+    background:var(--bg);
+    color:var(--text);
+    text-align:center;
+    margin:0;
+    padding:20px;
+    transition:0.3s;
 }
 
 .container {
-    max-width: 420px;
-    margin: auto;
-    background: var(--card);
-    padding: 20px;
-    border-radius: 12px;
+    max-width:450px;
+    margin:auto;
+    background:var(--card);
+    padding:20px;
+    border-radius:12px;
 }
 
 .task {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: var(--task);
-    padding: 10px;
-    border-radius: 8px;
-    margin: 10px 0;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--task);
+    padding:10px;
+    margin:10px 0;
+    border-radius:8px;
 }
 
 button {
-    border: none;
-    padding: 8px;
-    border-radius: 8px;
-    cursor: pointer;
+    border:none;
+    padding:8px;
+    border-radius:8px;
+    cursor:pointer;
 }
 
-.doneBtn {
-    background: #4caf50;
-    color: white;
-}
+.doneBtn { background:#4caf50; color:white; }
 
 #settingsBtn {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    background: #333;
-    color: white;
+    position:fixed;
+    top:10px;
+    right:10px;
+    background:#333;
+    color:white;
 }
 
 .panel {
-    display: none;
-    position: fixed;
-    top: 50px;
-    right: 10px;
-    background: var(--card);
-    padding: 15px;
-    border-radius: 10px;
-    width: 250px;
-    text-align: left;
+    display:none;
+    position:fixed;
+    top:50px;
+    right:10px;
+    background:var(--card);
+    padding:15px;
+    border-radius:10px;
+    width:260px;
+    text-align:left;
 }
 
 input, select {
-    width: 100%;
-    padding: 8px;
-    margin-top: 8px;
-    border-radius: 6px;
-    border: none;
+    width:100%;
+    padding:8px;
+    margin-top:8px;
+    border-radius:6px;
+    border:none;
 }
 
-.addBtn {
-    background: #4caf50;
-    color: white;
-    width: 100%;
-    margin-top: 10px;
+.addBtn{background:#4caf50;color:white;width:100%;margin-top:10px;}
+.removeBtn{background:#ff4444;color:white;width:100%;margin-top:10px;}
+.toggleBtn{background:#444;color:white;width:100%;margin-top:10px;}
+
+.stats {
+    margin-top:10px;
+    font-size:16px;
 }
 
-.removeBtn {
-    background: #ff4444;
-    color: white;
-    width: 100%;
-    margin-top: 10px;
+.done { text-decoration:line-through; opacity:0.6; }
+
+/* heatmap */
+.heatmap {
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:4px;
+    margin-top:15px;
 }
 
-.toggleBtn {
-    background: #444;
-    color: white;
-    width: 100%;
-    margin-top: 10px;
+.cell {
+    width:100%;
+    aspect-ratio:1;
+    border-radius:4px;
+    background:#333;
 }
 
-.progress {
-    margin-top: 15px;
-}
+.cell.low { background:#1f3b1f; }
+.cell.mid { background:#2ecc71; }
+.cell.high { background:#00ff88; }
 
-.streak {
-    margin-top: 10px;
-    font-size: 18px;
-}
-
-.done {
-    text-decoration: line-through;
-    opacity: 0.6;
+.small {
+    font-size:12px;
+    opacity:0.7;
 }
 </style>
 </head>
@@ -135,11 +128,15 @@ input, select {
 
 <div class="container">
 
-<div class="streak" id="streak">Streak: 0 🔥</div>
+<div class="stats" id="streak">Streak: 0 🔥</div>
+<div class="stats" id="level">Level: 0</div>
+<div class="stats" id="xp">XP: 0</div>
+<div class="stats" id="prestige">Prestige: 0</div>
+
+<h3 class="small">📅 Activity Heatmap (last 28 days)</h3>
+<div class="heatmap" id="heatmap"></div>
 
 <div id="tasks"></div>
-
-<div class="progress" id="progress"></div>
 
 </div>
 
@@ -147,87 +144,108 @@ input, select {
 
 <div class="panel" id="panel">
 
-    <h3>Settings</h3>
+<h3>Settings</h3>
 
-    <!-- Change Title -->
-    <h4>Change Title</h4>
-    <input id="titleInput" placeholder="New title...">
-    <button class="addBtn" onclick="changeTitle()">Update Title</button>
+<h4>Change Title</h4>
+<input id="titleInput">
+<button class="addBtn" onclick="changeTitle()">Update</button>
 
-    <!-- Theme -->
-    <h4>Theme</h4>
-    <button class="toggleBtn" onclick="toggleTheme()">Toggle Light/Dark</button>
+<h4>Theme</h4>
+<button class="toggleBtn" onclick="toggleTheme()">Toggle Light/Dark</button>
 
-    <!-- Add Task -->
-    <h4>Add Task</h4>
-    <input id="newTask" placeholder="New task...">
-    <button class="addBtn" onclick="addTask()">Add</button>
+<h4>Add Task</h4>
+<input id="newTask">
+<button class="addBtn" onclick="addTask()">Add</button>
 
-    <!-- Remove Task -->
-    <h4>Remove Task</h4>
-    <select id="removeSelect"></select>
-    <button class="removeBtn" onclick="removeTask()">Remove</button>
+<h4>Remove Task</h4>
+<select id="removeSelect"></select>
+<button class="removeBtn" onclick="removeTask()">Remove</button>
 
 </div>
 
 <script>
 
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [
-    { name: "Go to school", done: false },
-    { name: "Workout or move", done: false },
-    { name: "Do homework / learn", done: false },
-    { name: "Eat decent meals", done: false },
-    { name: "No bad habits", done: false }
+ {name:"School",done:false},
+ {name:"Workout",done:false},
+ {name:"Study",done:false},
+ {name:"Eat well",done:false}
 ];
 
-let streak = parseInt(localStorage.getItem("streak")) || 0;
-let lastDate = localStorage.getItem("lastDate");
+let streak = +localStorage.getItem("streak") || 0;
+let xp = +localStorage.getItem("xp") || 0;
+let level = +localStorage.getItem("level") || 0;
+let prestige = +localStorage.getItem("prestige") || 0;
 
+let lastDate = localStorage.getItem("lastDate");
 let today = new Date().toDateString();
 
-// streak system
-if (lastDate !== today) {
-    let yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
+let history = JSON.parse(localStorage.getItem("history")) || {};
 
-    if (lastDate === yesterday.toDateString()) {
+// daily reset + XP logic
+if (lastDate !== today) {
+
+    let yesterday = new Date();
+    yesterday.setDate(yesterday.getDate()-1);
+
+    let allDone = JSON.parse(localStorage.getItem("allDone")) || false;
+
+    if (lastDate === yesterday.toDateString() && allDone) {
         streak++;
     } else {
         streak = 1;
     }
 
-    localStorage.setItem("streak", streak);
+    // save yesterday XP to heatmap
+    let yesterdayKey = yesterday.toDateString();
+    history[yesterdayKey] = calculateDailyXP();
+
+    // level system
+    level = Math.floor(xp / 100);
+
+    if (level >= 100) {
+        prestige++;
+        level = 0;
+        xp = 0;
+    }
+
+    localStorage.setItem("history", JSON.stringify(history));
     localStorage.setItem("lastDate", today);
+    localStorage.setItem("streak", streak);
+    localStorage.setItem("level", level);
+    localStorage.setItem("prestige", prestige);
+
+    tasks.forEach(t=>t.done=false);
+    localStorage.setItem("tasks", JSON.stringify(tasks));
 }
 
-// load saved title
-let savedTitle = localStorage.getItem("title");
-if (savedTitle) {
-    document.getElementById("title").innerText = savedTitle;
-}
-
-// load theme
-if (localStorage.getItem("theme") === "light") {
-    document.body.classList.add("light");
+function calculateDailyXP() {
+    return tasks.filter(t=>t.done).length * 10;
 }
 
 function render() {
+
     let container = document.getElementById("tasks");
-    container.innerHTML = "";
+    container.innerHTML="";
 
-    tasks.forEach((task, i) => {
-        let div = document.createElement("div");
-        div.className = "task";
+    tasks.forEach((t,i)=>{
+        let div=document.createElement("div");
+        div.className="task";
 
-        let label = document.createElement("span");
-        label.innerText = task.name;
-        if (task.done) label.classList.add("done");
+        let label=document.createElement("span");
+        label.innerText=t.name;
+        if(t.done) label.classList.add("done");
 
-        let btn = document.createElement("button");
-        btn.innerText = task.done ? "Undo" : "Done";
-        btn.className = "doneBtn";
-        btn.onclick = () => {
-            tasks[i].done = !tasks[i].done;
+        let btn=document.createElement("button");
+        btn.innerText=t.done?"Undo":"Done";
+        btn.className="doneBtn";
+
+        btn.onclick=()=>{
+            tasks[i].done=!t.done;
+
+            if(tasks[i].done) xp+=10;
+            else xp-=10;
+
             save();
             render();
         };
@@ -237,69 +255,92 @@ function render() {
         container.appendChild(div);
     });
 
-    document.getElementById("progress").innerText =
-        `Progress: ${tasks.filter(t => t.done).length} / ${tasks.length}`;
+    localStorage.setItem("xp",xp);
+    level=Math.floor(xp/100);
 
-    document.getElementById("streak").innerText =
-        `Streak: ${streak} 🔥`;
+    document.getElementById("streak").innerText=`Streak: ${streak} 🔥`;
+    document.getElementById("level").innerText=`Level: ${level}`;
+    document.getElementById("xp").innerText=`XP: ${xp}`;
+    document.getElementById("prestige").innerText=`Prestige: ${prestige}`;
 
     updateDropdown();
+    checkAllDone();
+    renderHeatmap();
 }
 
-function save() {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
+function checkAllDone(){
+    let allDone = tasks.every(t=>t.done);
+    localStorage.setItem("allDone",allDone);
 }
 
-function addTask() {
-    let input = document.getElementById("newTask");
-    if (!input.value.trim()) return;
+function renderHeatmap(){
 
-    tasks.push({ name: input.value, done: false });
-    input.value = "";
-    save();
-    render();
-}
+    let map=document.getElementById("heatmap");
+    map.innerHTML="";
 
-function removeTask() {
-    let index = document.getElementById("removeSelect").value;
-    tasks.splice(index, 1);
-    save();
-    render();
-}
+    let days=[];
+    for(let i=27;i>=0;i--){
+        let d=new Date();
+        d.setDate(d.getDate()-i);
+        days.push(d.toDateString());
+    }
 
-function updateDropdown() {
-    let select = document.getElementById("removeSelect");
-    select.innerHTML = "";
+    days.forEach(day=>{
+        let div=document.createElement("div");
+        div.className="cell";
 
-    tasks.forEach((t, i) => {
-        let opt = document.createElement("option");
-        opt.value = i;
-        opt.innerText = t.name;
-        select.appendChild(opt);
+        let val = history[day] || 0;
+
+        if(val>=40) div.classList.add("high");
+        else if(val>=20) div.classList.add("mid");
+        else if(val>0) div.classList.add("low");
+
+        map.appendChild(div);
     });
 }
 
-function togglePanel() {
-    let panel = document.getElementById("panel");
-    panel.style.display = panel.style.display === "block" ? "none" : "block";
+function save(){
+    localStorage.setItem("tasks",JSON.stringify(tasks));
 }
 
-function changeTitle() {
-    let newTitle = document.getElementById("titleInput").value;
-    if (!newTitle.trim()) return;
-
-    document.getElementById("title").innerText = newTitle;
-    localStorage.setItem("title", newTitle);
+function addTask(){
+    let v=document.getElementById("newTask").value;
+    if(!v.trim())return;
+    tasks.push({name:v,done:false});
+    save();render();
 }
 
-function toggleTheme() {
+function removeTask(){
+    let i=document.getElementById("removeSelect").value;
+    tasks.splice(i,1);
+    save();render();
+}
+
+function updateDropdown(){
+    let s=document.getElementById("removeSelect");
+    s.innerHTML="";
+    tasks.forEach((t,i)=>{
+        let o=document.createElement("option");
+        o.value=i;
+        o.innerText=t.name;
+        s.appendChild(o);
+    });
+}
+
+function togglePanel(){
+    let p=document.getElementById("panel");
+    p.style.display=p.style.display==="block"?"none":"block";
+}
+
+function changeTitle(){
+    let t=document.getElementById("titleInput").value;
+    if(!t.trim())return;
+    document.getElementById("title").innerText=t;
+    localStorage.setItem("title",t);
+}
+
+function toggleTheme(){
     document.body.classList.toggle("light");
-
-    if (document.body.classList.contains("light")) {
-        localStorage.setItem("theme", "light");
-    } else {
-        localStorage.setItem("theme", "dark");
-    }
 }
 
 render();

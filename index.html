@@ -3,138 +3,253 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Daily Tracker</title>
+<title>Samihs daily task tracker</title>
+
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        background: #0f0f0f;
-        color: white;
-        text-align: center;
-        margin: 0;
-        padding: 20px;
-    }
+body {
+    font-family: Arial, sans-serif;
+    background: #0f0f0f;
+    color: white;
+    text-align: center;
+    margin: 0;
+    padding: 20px;
+}
 
-    h1 {
-        margin-top: 20px;
-    }
+h1 {
+    margin-top: 20px;
+}
 
-    .container {
-        max-width: 400px;
-        margin: auto;
-        background: #1c1c1c;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 0 10px rgba(255,255,255,0.1);
-    }
+.container {
+    max-width: 420px;
+    margin: auto;
+    background: #1c1c1c;
+    padding: 20px;
+    border-radius: 12px;
+}
 
-    .task {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin: 15px 0;
-        background: #2a2a2a;
-        padding: 10px;
-        border-radius: 8px;
-    }
+.task {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #2a2a2a;
+    padding: 10px;
+    border-radius: 8px;
+    margin: 10px 0;
+}
 
-    button {
-        background: #4caf50;
-        border: none;
-        padding: 10px;
-        color: white;
-        border-radius: 8px;
-        cursor: pointer;
-    }
+button {
+    border: none;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+}
 
-    button.reset {
-        background: #ff4444;
-        margin-top: 20px;
-        width: 100%;
-    }
+.doneBtn {
+    background: #4caf50;
+    color: white;
+}
 
-    .done {
-        text-decoration: line-through;
-        opacity: 0.6;
-    }
+.deleteBtn {
+    background: #ff4444;
+    color: white;
+    margin-left: 5px;
+}
 
-    .progress {
-        margin-top: 15px;
-    }
+#settingsBtn {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: #333;
+    color: white;
+}
+
+.panel {
+    display: none;
+    position: fixed;
+    top: 50px;
+    right: 10px;
+    background: #222;
+    padding: 15px;
+    border-radius: 10px;
+    width: 240px;
+    text-align: left;
+}
+
+input, select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 10px;
+    border-radius: 6px;
+    border: none;
+}
+
+.addBtn {
+    background: #4caf50;
+    color: white;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.removeBtn {
+    background: #ff4444;
+    color: white;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.progress {
+    margin-top: 15px;
+}
+
+.streak {
+    margin-top: 10px;
+    font-size: 18px;
+}
+
+.done {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
 </style>
 </head>
 
 <body>
 
-<h1>🔥 Daily Growth Tracker</h1>
+<h1>🔥 Samihs daily task tracker</h1>
 
 <div class="container">
 
-    <div id="tasks"></div>
+<div class="streak" id="streak">Streak: 0 🔥</div>
 
-    <div class="progress" id="progress"></div>
+<div id="tasks"></div>
 
-    <button class="reset" onclick="resetDay()">Reset Day</button>
+<div class="progress" id="progress"></div>
 
 </div>
 
+<button id="settingsBtn" onclick="togglePanel()">⚙️</button>
+
+<div class="panel" id="panel">
+    <h3>Settings</h3>
+
+    <h4>Add Task</h4>
+    <input id="newTask" placeholder="New task...">
+    <button class="addBtn" onclick="addTask()">Add</button>
+
+    <h4 style="margin-top:15px;">Remove Task</h4>
+    <select id="removeSelect"></select>
+    <button class="removeBtn" onclick="removeTask()">Remove</button>
+</div>
+
 <script>
-const defaultTasks = [
-    "Go to school / show up",
-    "Workout or move body",
-    "Do homework or study 30 min",
+let defaultTasks = [
+    "Go to school",
+    "Workout or move",
+    "Do homework / learn",
     "Eat decent meals",
-    "No bad habits today"
+    "No bad habits"
 ];
 
-let tasks = JSON.parse(localStorage.getItem("tasks")) || defaultTasks.map(t => ({ name: t, done: false }));
+let tasks = JSON.parse(localStorage.getItem("tasks")) ||
+defaultTasks.map(t => ({ name: t, done: false }));
+
+let streak = parseInt(localStorage.getItem("streak")) || 0;
+let lastDate = localStorage.getItem("lastDate");
+
+let today = new Date().toDateString();
+
+// streak logic
+if (lastDate !== today) {
+    let yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (lastDate === yesterday.toDateString()) {
+        streak += 1;
+    } else {
+        streak = 1;
+    }
+
+    localStorage.setItem("lastDate", today);
+    localStorage.setItem("streak", streak);
+}
 
 function render() {
     const container = document.getElementById("tasks");
     container.innerHTML = "";
 
     tasks.forEach((task, index) => {
-        const div = document.createElement("div");
+        let div = document.createElement("div");
         div.className = "task";
 
-        const label = document.createElement("span");
+        let label = document.createElement("span");
         label.innerText = task.name;
         if (task.done) label.classList.add("done");
 
-        const btn = document.createElement("button");
-        btn.innerText = task.done ? "Undo" : "Done";
-        btn.onclick = () => {
+        let doneBtn = document.createElement("button");
+        doneBtn.innerText = task.done ? "Undo" : "Done";
+        doneBtn.className = "doneBtn";
+        doneBtn.onclick = () => {
             tasks[index].done = !tasks[index].done;
             save();
             render();
         };
 
         div.appendChild(label);
-        div.appendChild(btn);
+        div.appendChild(doneBtn);
+
         container.appendChild(div);
     });
 
-    const doneCount = tasks.filter(t => t.done).length;
+    let doneCount = tasks.filter(t => t.done).length;
     document.getElementById("progress").innerText =
         `Progress: ${doneCount} / ${tasks.length}`;
+
+    document.getElementById("streak").innerText =
+        `Streak: ${streak} 🔥`;
+
+    updateRemoveDropdown();
 }
 
 function save() {
     localStorage.setItem("tasks", JSON.stringify(tasks));
 }
 
-function resetDay() {
-    tasks = defaultTasks.map(t => ({ name: t, done: false }));
+function addTask() {
+    let input = document.getElementById("newTask");
+    if (input.value.trim() === "") return;
+
+    tasks.push({ name: input.value, done: false });
+    input.value = "";
     save();
     render();
 }
 
-// Auto-reset each day
-let lastDate = localStorage.getItem("lastDate");
-let today = new Date().toDateString();
+function removeTask() {
+    let select = document.getElementById("removeSelect");
+    let index = select.value;
 
-if (lastDate !== today) {
-    resetDay();
-    localStorage.setItem("lastDate", today);
+    if (index === "") return;
+
+    tasks.splice(index, 1);
+    save();
+    render();
+}
+
+function updateRemoveDropdown() {
+    let select = document.getElementById("removeSelect");
+    select.innerHTML = "";
+
+    tasks.forEach((task, index) => {
+        let option = document.createElement("option");
+        option.value = index;
+        option.text = task.name;
+        select.appendChild(option);
+    });
+}
+
+function togglePanel() {
+    let panel = document.getElementById("panel");
+    panel.style.display = panel.style.display === "block" ? "none" : "block";
 }
 
 render();
